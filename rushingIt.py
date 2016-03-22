@@ -87,8 +87,8 @@ def structure(data, headers):
     return df
 
 try:
-    sdate = raw_input('Please Enter Start Date (YYYYMMDD): ')
-    edate = raw_input('Please Enter End Date (YYYYMMDD): ')
+    sDate = raw_input('Please Enter Start Date (YYYYMMDD): ')
+    eDate = raw_input('Please Enter End Date (YYYYMMDD): ')
     clientDF = clientProject()
     for i in clientDF.index:
         pName = clientDF['project_name'][i]
