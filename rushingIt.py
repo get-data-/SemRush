@@ -7,15 +7,15 @@ Created on Mon Mar 21 09:15:35 2016
 
 import ijson, requests, json, os, io
 import pandas as pd
-import datetime
+import time, datetime
 
-
+    
 def majorKey():
-    with open(##fp_here##, 'r') as f:
+    with open(##FP_Here##, 'r') as f:
         ApiKey = f.read()
         return ApiKey
 def clientProject():
-    clientDF = pd.read_csv(##fp_here##)
+    clientDF = pd.read_csv(##FP_Here##)
     return clientDF
 
 def queryBuilder(sDate,eDate,projectId,projectUrl,ApiKey):
@@ -43,43 +43,31 @@ def outputResponse(ofilePath, response):
     with io.open(ofilePath, 'w', encoding='utf-8') as f:
         f.write(unicode(json.dumps(response, ensure_ascii=False)))
 
-def parseThe(jsonFile):
-    q_site = #random_static_var
+
+def parseThe(jsonFile, projectUrl):
     with open(jsonFile, 'r') as f:
         obj = ijson.items(f, 'data')
         columns = list(obj)
     kwdata = [col for col in columns]
-    rank_headers = ['Keyword','Search_Volume','CPC','Keyword_Tags']
-    landing_headers = ['Keyword','Search_Volume','CPC','Keyword_Tags']
+    rank_headers = ['Keyword','Keyword_Tags','Search_Volume','CPC','Date','Keyword_Position', 'Landing_Page']
     rank_df = []
-    landing_df = []
     for data in kwdata:
         for meta in data.keys():
             kw = data[meta]['Ph']
             kw_v = data[meta]['Nq']
             kw_cpc = data[meta]['Cp']
             kw_tag = data[meta]['Tg'].values()
-            rank_row = [kw, kw_v, kw_cpc, kw_tag]        
             for thedate in data[meta]['Dt']:
-                rd = datetime.datetime.strptime(thedate, '%Y%m%d').date()
-                if rd in rank_headers:
-                    pass
-                else:
-                    rank_headers.append(rd)
-                rank = data[meta]['Dt'][thedate][q_site]
-                rank_row.append(rank)
-            rank_df.append(rank_row)
-            landing_row = [kw, kw_v, kw_cpc, kw_tag]
-            for l_date in data[meta]['Lu']:
-                ld = datetime.datetime.strptime(l_date, '%Y%m%d').date()
-                if ld in landing_headers:
-                    pass
-                else:
-                    landing_headers.append(ld)
-                landing_url = data[meta]['Lu'][l_date][q_site]
-                landing_row.append(landing_url)
-            landing_df.append(landing_row)
-    return rank_headers, landing_headers, rank_df, landing_df
+                date = datetime.datetime.strptime(thedate, '%Y%m%d').date()
+                rank = data[meta]['Dt'][thedate][projectUrl]
+                for otherdate in data[meta]['Lu']:
+                    if otherdate == thedate:
+                        url = data[meta]['Lu'][otherdate][projectUrl]
+                        rankdata = [kw, kw_tag, kw_v, kw_cpc, date, rank, url]
+                        rank_df.append(rankdata)
+                    else:
+                        pass
+    return rank_headers, rank_df
 
 def structure(data, headers):
     df = pd.DataFrame(data, columns=headers)
@@ -92,19 +80,17 @@ try:
     clientDF = clientProject()
     for i in clientDF.index:
         pName = clientDF['project_name'][i]
-        projectId = clientDF['project_id'][i]
+        projectId = unicode(clientDF['project_id'][i])
         projectUrl = clientDF['url'][i]
-        jsonFile = ##fp_here## + pName +'.json'
+        jsonFile = ##FP_Here## + pName + '.json'
         ofilePath = os.path.normpath(jsonFile)
         query = queryBuilder(sDate,eDate,projectId,projectUrl,majorKey())
+        time.sleep(1)
         response = sendQuery(query)
         outputResponse(ofilePath, response)
-        rank_headers, landing_headers, rank_df, landing_df = parseThe(jsonFile)
+        rank_headers, rank_df = parseThe(jsonFile, projectUrl)
         df = structure(rank_df, rank_headers)
-        df2 = structure(landing_df, landing_headers)
-        rankO = pName + '_rank.csv'
-        landingO = pName + '_landing_page.csv'
-        df.to_csv(rankO, encoding='utf-8')
-        df2.to_csv(landingO, encoding='utf-8')
+        fn = pName + '_rank.csv'
+        df.to_csv(fn, encoding='utf-8')
 except Exception as e:
     print e
